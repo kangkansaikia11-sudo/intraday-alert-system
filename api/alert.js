@@ -59,9 +59,16 @@ export default async function handler(req, res) {
     })).filter(c => c.open !== null);
 
     // 2️⃣ Consider ONLY candles AFTER alert candle close
-    const postAlertCandles = candles.filter(
-      c => c.time > new Date(alertTime)
-    );
+//     AND before 3:15 PM IST cutoff
+const alertDate = new Date(alertTime);
+
+// Build 3:15 PM IST cutoff for the same trading day
+const cutoff = new Date(alertDate);
+cutoff.setHours(15, 15, 0, 0); // 3:15 PM IST
+
+const postAlertCandles = candles.filter(c =>
+  c.time > alertDate && c.time <= cutoff
+);
 
     // 3️⃣ Evaluate SL / Target hit (LOCKED LOGIC)
     let outcome = "NO_HIT";
@@ -109,3 +116,4 @@ export default async function handler(req, res) {
     });
   }
 }
+
