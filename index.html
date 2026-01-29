@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Intraday Trading Engine</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+ <div id="marketBar">
+    <iframe
+        src="https://s.tradingview.com/widgetembed/?symbol=NSE%3ANIFTY&interval=1&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=111827&studies=%5B%5D&theme=dark&style=1&timezone=Asia%2FKolkata"
+        width="100%"
+        height="60"
+        frameborder="0"
+        allowtransparency="true">
+    </iframe>
+</div>
+
+    <h1>Intraday Trading Engine</h1>
+
+    <h2>Market Context</h2>
+    <label>NIFTY Bias:</label><br>
+<input type="text" placeholder="Bullish / Bearish / Neutral"><br><br>
+
+<label>Day Type:</label><br>
+<input type="text" placeholder="Normal / Gap / No-trade">
+
+    <hr>
+
+    <h2>Stage-1 Shortlist</h2>
+<label>Stock:</label><br>
+<input type="text" placeholder="e.g. TCS"><br><br>
+
+<label>Category:</label><br>
+<input type="text" placeholder="A1 / A2 / B"><br><br>
+
+<label>Reason:</label><br>
+<input type="text" placeholder="Volume / Sweep / Trend">
+
+    <hr>
+
+    <h2>Stage-2 Setup</h2>
+<label>Entry Type:</label><br>
+<input type="text" placeholder="Above / Below"><br><br>
+
+<label>Entry Price:</label><br>
+<input type="number" placeholder="e.g. 2450"><br><br>
+
+<label>Stoploss:</label><br>
+<input type="number" placeholder="e.g. 2420"><br><br>
+
+<label>Target:</label><br>
+<input type="number" placeholder="e.g. 2520">
+<br><br>
+<button id="generateAlert">Generate Alert</button>
+
+    <hr>
+
+    <h2>Final Alert</h2>
+<label>Status:</label><br>
+<input type="text" id="statusBox" value="Pending" readonly><br><br>
+
+<label>Valid Till:</label><br>
+<input type="text" value="2:30 PM" readonly>
+<br><br>
+<textarea id="alertBox" rows="8" cols="60" readonly></textarea>
+<br><br>
+<button id="copyAlert">Copy Alert for Telegram</button>
+<script>
+    var alertCount = 0;
+document.getElementById("generateAlert").addEventListener("click", function () {
+if (alertCount >= 2) {
+    alert("Maximum 2 alerts allowed today.");
+    return;
+}
+    var stock = document.querySelector("input[placeholder='e.g. TCS']").value;
+    var entryType = document.querySelector("input[placeholder='Above / Below']").value;
+    var direction = entryType.toLowerCase() === "above" ? "BUY" : "SELL";
+var entryLabel = entryType.toUpperCase();
+    var entryPrice = document.querySelector("input[placeholder='e.g. 2450']").value;
+    var stoploss = document.querySelector("input[placeholder='e.g. 2420']").value;
+    var target = document.querySelector("input[placeholder='e.g. 2520']").value;
+
+    var alertText =
+        "INTRADAY SETUP (NSE CASH)\n\n" +
+        "STOCK: " + stock + "\n" +
+        "TYPE: " + direction + "\n" +
+"ENTRY " + entryLabel + ": " + entryPrice + "\n" +
+        "STOPLOSS: " + stoploss + "\n" +
+        "TARGET: " + target + "\n\n" +
+        "VALID TILL: 2:30 PM\n" +
+        "ONE TRADE ONLY";
+
+    document.getElementById("alertBox").value = alertText;
+    document.getElementById("statusBox").value = "Ready";
+    alertCount = alertCount + 1;
+
+});
+document.getElementById("copyAlert").addEventListener("click", function () {
+
+    var alertText = document.getElementById("alertBox").value;
+
+    if (alertText.trim() === "") {
+        alert("No alert to copy.");
+        return;
+    }
+
+    navigator.clipboard.writeText(alertText).then(function () {
+        alert("Alert copied. Paste it into Telegram.");
+    });
+
+});
+// Temporary demo logic for NIFTY color (will use live data later)
+var niftyChangeElement = document.getElementById("niftyChange");
+var niftyPercentElement = document.getElementById("niftyPercent");
+
+// Example placeholder values (will be replaced by live feed)
+var niftyChange = 0;
+
+// Apply color based on change
+if (niftyChange > 0) {
+    niftyChangeElement.className = "positive";
+    niftyPercentElement.className = "positive";
+} else if (niftyChange < 0) {
+    niftyChangeElement.className = "negative";
+    niftyPercentElement.className = "negative";
+} else {
+    niftyChangeElement.className = "neutral";
+    niftyPercentElement.className = "neutral";
+}
+</script>
+</body>
+</html>
+
