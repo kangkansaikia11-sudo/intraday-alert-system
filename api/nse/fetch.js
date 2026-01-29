@@ -6,33 +6,49 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = `https://www.nseindia.com/api/quote-equity?symbol=${symbol}`;
-
-    const response = await fetch(url, {
+    // 1️⃣ Bootstrap NSE session (get cookies)
+    const homeResponse = await fetch("https://www.nseindia.com", {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-        "Referer": "https://www.nseindia.com/"
+        "Accept": "text/html",
       }
     });
 
-    if (!response.ok) {
-      throw new Error("NSE fetch failed");
+    const setCookie = homeResponse.headers.get("set-cookie");
+
+    if (!setCookie) {
+      throw new Error("Failed to obtain NSE cookies");
     }
 
-    const data = await response.json();
+    // 2️⃣ Fetch equity quote using same session
+    const apiUrl = `https://www.nseindia.com/api/quote-equity?symbol=${symbol}`;
 
-    // Extract intraday 5-minute candles
-    const intraday =
-      data?.grapthData ||
+    const dataResponse = await fetch(apiUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Referer": "https://www.nseindia.com/",
+        "Cookie": setCookie
+      }
+    });
+
+    if (!dataResponse.ok) {
+      throw new Error("NSE data fetch failed");
+    }
+
+    const data = await dataResponse.json();
+
+    // 3️⃣ Extract intraday data (5-minute buckets)
+    const candles =
+      data?.priceInfo?.intradayHighLow ||
       data?.intraDayHighLow ||
-      data?.priceInfo?.intradayData ||
+      data?.grapthData ||
       [];
 
     return res.status(200).json({
       symbol,
       source: "NSE",
-      candles: intraday
+      candles
     });
 
   } catch (error) {
