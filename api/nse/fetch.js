@@ -6,54 +6,50 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1️⃣ Bootstrap NSE session (get cookies)
-    const homeResponse = await fetch("https://www.nseindia.com", {
+    // Yahoo Finance uses NSE symbols with .NS
+    const yahooSymbol = `${symbol}.NS`;
+
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=5m&range=1d`;
+
+    const response = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Accept": "text/html",
+        "Accept": "application/json"
       }
     });
 
-    const setCookie = homeResponse.headers.get("set-cookie");
-
-    if (!setCookie) {
-      throw new Error("Failed to obtain NSE cookies");
+    if (!response.ok) {
+      throw new Error("Yahoo fetch failed");
     }
 
-    // 2️⃣ Fetch equity quote using same session
-    const apiUrl = `https://www.nseindia.com/api/quote-equity?symbol=${symbol}`;
+    const json = await response.json();
 
-    const dataResponse = await fetch(apiUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-        "Referer": "https://www.nseindia.com/",
-        "Cookie": setCookie
-      }
-    });
-
-    if (!dataResponse.ok) {
-      throw new Error("NSE data fetch failed");
+    const result = json?.chart?.result?.[0];
+    if (!result) {
+      throw new Error("No chart result");
     }
 
-    const data = await dataResponse.json();
+    const timestamps = result.timestamp || [];
+    const quotes = result.indicators?.quote?.[0] || {};
 
-    // 3️⃣ Extract intraday data (5-minute buckets)
-    const candles =
-      data?.priceInfo?.intradayHighLow ||
-      data?.intraDayHighLow ||
-      data?.grapthData ||
-      [];
+    const candles = timestamps.map((t, i) => ({
+      time: new Date(t * 1000).toISOString(),
+      open: quotes.open?.[i],
+      high: quotes.high?.[i],
+      low: quotes.low?.[i],
+      close: quotes.close?.[i]
+    })).filter(c => c.open !== null);
 
     return res.status(200).json({
       symbol,
-      source: "NSE",
+      source: "Yahoo Finance",
+      interval: "5m",
       candles
     });
 
   } catch (error) {
     return res.status(500).json({
-      error: "Failed to fetch NSE intraday data",
+      error: "Failed to fetch intraday data",
       details: error.message
     });
   }
