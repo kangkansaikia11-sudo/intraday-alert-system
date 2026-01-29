@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = `https://www.nseindia.com/api/chart-databyindex?index=${symbol}EQN`;
+    const url = `https://www.nseindia.com/api/quote-equity?symbol=${symbol}`;
 
     const response = await fetch(url, {
       headers: {
@@ -22,15 +22,22 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    // Extract intraday 5-minute candles
+    const intraday =
+      data?.grapthData ||
+      data?.intraDayHighLow ||
+      data?.priceInfo?.intradayData ||
+      [];
+
     return res.status(200).json({
       symbol,
       source: "NSE",
-      raw: data
+      candles: intraday
     });
 
   } catch (error) {
     return res.status(500).json({
-      error: "Failed to fetch NSE data",
+      error: "Failed to fetch NSE intraday data",
       details: error.message
     });
   }
